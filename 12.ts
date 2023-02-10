@@ -13,7 +13,7 @@ function idFromCoords(coords: Coord) {
 }
 
 function buildGrid(rawMaze: string[]) {
-    const matrixMap: Matrix = {};
+    const matrix: Matrix = {};
     let start: undefined | Cell;
     let goal: undefined | Cell;
 
@@ -38,13 +38,13 @@ function buildGrid(rawMaze: string[]) {
                 goal = cell;
             }
 
-            matrixMap[id] = cell;
+            matrix[id] = cell;
 
         }
     }
 
     return {
-        matrixMap,
+        matrix,
         start: start as Cell,
         goal: goal as Cell,
     };
@@ -83,11 +83,21 @@ function buildDistances(matrix: Matrix) {
     return {distances, queue};
 }
 
-
-function part1(preppedInput: string[]) {
-    const {start, goal, matrixMap} =  buildGrid(preppedInput);
-
-    const {distances, queue} = buildDistances(matrixMap);
+function getDijkstra({
+    matrix,
+    distances,
+    goal,
+    start,
+    queue,
+    breakValue
+}: {
+    matrix: Matrix,
+    distances: Record<string, number>,
+    goal: Cell,
+    start: Cell,
+    queue: Set<string>,
+    breakValue?: number
+}) {
     const prev: Record<string, Cell | undefined> = {};
     distances[start.id] = 0;
 
@@ -97,7 +107,7 @@ function part1(preppedInput: string[]) {
 
         queue.forEach(i => {
             if (u === undefined || u && distances[i] < distances[u.id]) {
-                u = matrixMap[i];
+                u = matrix[i];
             }
         });
 
@@ -107,9 +117,13 @@ function part1(preppedInput: string[]) {
             break;
         }
 
+        if (breakValue && u.value === breakValue) {
+            return distances[u.id];
+        }
+
         queue.delete(u.id);
 
-        const neighbors = getHigherNeighbors(matrixMap, u.coords);
+        const neighbors = getHigherNeighbors(matrix, u.coords);
 
         for (let i = 0; i < neighbors.length; i++) {
             const v = neighbors[i];
@@ -128,8 +142,29 @@ function part1(preppedInput: string[]) {
     return distances[goal.id];
 }
 
+function part1(preppedInput: string[]) {
+    const {start, goal, matrix} =  buildGrid(preppedInput);
+    const {distances, queue} = buildDistances(matrix);
+    const dijkstra = getDijkstra({matrix, distances, queue, goal, start});
+
+    return dijkstra;
+}
+
 function part2(preppedInput: string[]) {
-    return 'output';
+    const {start, goal, matrix} =  buildGrid(preppedInput);
+    const {distances, queue} = buildDistances(matrix);
+
+    // todo probably shouldn't hardcode
+    const highestValue = 26;
+
+    // inversing the values so the getHigherNeighbors still works
+    Object.values(matrix).forEach(cell => {
+        matrix[cell.id].value = Math.abs(cell.value - highestValue - 1);
+    });
+
+    const dijkstra = getDijkstra({matrix, distances, queue, start: goal, goal: start, breakValue: highestValue});
+
+    return dijkstra;
 }
 
 async function main() {
