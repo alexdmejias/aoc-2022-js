@@ -117,7 +117,7 @@ function getDijkstra({
             break;
         }
 
-        if (breakValue && u.value === breakValue) {
+        if (Number.isInteger(breakValue) && u.value === breakValue) {
             return distances[u.id];
         }
 
@@ -155,11 +155,14 @@ function part2(preppedInput: string[]) {
     const {distances, queue} = buildDistances(matrix);
 
     // todo probably shouldn't hardcode
-    const highestValue = 26;
+    let highestValue = -1e10;
 
     // inversing the values so the getHigherNeighbors still works
     Object.values(matrix).forEach(cell => {
-        matrix[cell.id].value = Math.abs(cell.value - highestValue - 1);
+        matrix[cell.id].value = -cell.value;
+        if (matrix[cell.id].value > highestValue) {
+            highestValue = matrix[cell.id].value;
+        }
     });
 
     const dijkstra = getDijkstra({matrix, distances, queue, start: goal, goal: start, breakValue: highestValue});
